@@ -1,8 +1,5 @@
 const express = require("express")
-const getAllRecipes = require("../controllers/recipeController")
-const postController = require("../controllers/postController")
-const deleteController = require("../controllers/deleteController")
-const singleRecipeController = require("../controllers/singleRecipeController")
+const {getAllRecipes, postController, deleteController, singleRecipeController} = require("../controllers/recipeController")
 
 const recipeRouter  =  express.Router()
 
