@@ -146,10 +146,74 @@ const updateRecipePut = async (req,res)=>{
     })
 }
 
+
+//http://localhost:1900/recipes/list/?sort=rating&page=1 price
+// the above url will return the sorted data according to rating and in case of rating tie breaker, it will be returned
+// according to increasing order of price
+// but the " " in the url is encoded into some unwanted characters and so we will use _ 
+//http://localhost:1900/recipes/list/?sort=rating_price&page=1
+
+const listRecipes = async (req,res)=>{
+  try {
+    const {page=1,limit:limitValue=5, sort:sortValue="price", q="",selectValues="name price", ...filters} = req.query
+
+    //find({filterCriteria:<filterCriteriaValue>}) and filters is {filterCriteria:<filterCriteriaValue>}
+    //here find() just returns a thenable object and not a actual promise, instead if we use .exec() then it returns a promise
+    let query = recipeModel.find(filters)
+
+    //search functionality
+
+    //making the regex for the case senstivity
+    const matchString = new RegExp(q,"i")
+    query = query.where("name").regex(matchString)
+
+    const sortParams = sortValue.split("_").join(" ")
+
+    query = query.sort(sortParams)
+    //query objects are resolved only once, if we want to resolve again then we need another query object
+    // this is being done to get the count of the recipes that match the given criteria and not the total count
+    const queryClone = query.clone()
+    const totalRecipes = await queryClone.countDocuments()
+
+    query = query.skip(limitValue*(page-1))
+    query = query.limit(limitValue)
+
+
+
+    // specify the required or not required items
+    //url for this: http://localhost:1900/recipes/list/?selectValues=-tags -ingredients
+    //this will exclude the tags and ingridients from the response
+
+    const selectParams = selectValues.split("_").join(" ")
+    query = query.select(selectParams)
+
+
+
+    const recipes = await query.exec()
+  
+    res.json({
+      status: "success",
+      data: {
+        results:recipes.length,
+        recipes: recipes,
+        total:totalRecipes
+      },
+    });
+  } catch (err) {
+    console.log("_______",err)
+    res.status(500);
+    res.json({
+      status: "failed",
+      error: "Internal server error",
+    });
+  }
+}
+
 module.exports = {
   getAllRecipes,
   postController,
   deleteController,
   singleRecipeController,
-  updateRecipePut
+  updateRecipePut,
+  listRecipes
 }
