@@ -1,17 +1,23 @@
 const fsP = require("fs/promises");
 const path = require("path");
 const recipeModel = require("../models/recipeModel")
+const mongoose = require("mongoose")
 
 const filePath = path.join(__dirname, "../data/recipes.json");
 
 
+const findRecipeById=(id)=>{
+  return recipeModel.findOne({_id:id})
+}
+
+
 const getAllRecipes =  async (req, res) => {
   try {
-    const recipe = await recipeModel.find()
+    const recipes = await recipeModel.find()
     res.json({
       status: "success",
       data: {
-        recipes: recipe,
+        recipes: recipes,
       },
     });
   } catch (err) {
@@ -65,11 +71,6 @@ const postController  =async (req, res) => {
  * 3 In the url as the query, path will be /recipes/?id=<id value>, let {id} = req.query
  * id=Number(id) as id will be in the string
  */
-
-const findRecipeById=(id)=>{
-  return recipeModel.findOne({_id:id})
-}
-
 const deleteController = async (req, res) => {
   try {
     const id = req.body.id
@@ -127,15 +128,28 @@ const singleRecipeController = async (req,res)=>{
 
 }
 
-/**
- * Todo: 
- * Implement put api
- * Implement patch api
- */
+const updateRecipePut = async (req,res)=>{
+  let {recipeId} = req.params
+  const newRecipe = req.body
+  recipeId = new mongoose.Types.ObjectId(recipeId);
+    const updatedRecipe = await recipeModel.findOneAndReplace(
+      { _id: recipeId },
+      newRecipe,
+      { new: true, returnDocument: "after" } // Return the updated document
+    );
+    if (!updatedRecipe) {
+      return res.status(404).json({ message: "Recipe not found" });
+    }
+    res.status(200).
+    json({
+      message:"Recipe Updated"
+    })
+}
 
 module.exports = {
   getAllRecipes,
   postController,
   deleteController,
-  singleRecipeController
+  singleRecipeController,
+  updateRecipePut
 }
